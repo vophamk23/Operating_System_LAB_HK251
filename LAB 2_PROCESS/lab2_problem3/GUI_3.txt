@@ -1,0 +1,61 @@
+Problem 3: Two-way Communication với Message Queue + Multi-thread
+Ý tưởng thực hiện
+Vấn đề:
+
+Practice 4.2 chỉ có one-way communication (HALF-DUPLEX): msgsnd → msgrcv
+Cần tạo two-way communication (FULL-DUPLEX): cả 2 bên đều có thể gửi và nhận
+
+Giải pháp:
+Sử dụng 2 message queues + multi-thread:
+
+Queue 1: Process A → Process B
+Queue 2: Process B → Process A
+Mỗi process có 2 threads:
+
+Thread 1: Liên tục nhận message từ queue của mình
+Thread 2: Gửi message đến queue của process kia
+
+
+
+Sơ đồ kiến trúc
+Process A                           Process B
+┌─────────────────┐                ┌─────────────────┐
+│  Thread Send    │──── Queue1 ───→│  Thread Recv    │
+│                 │                │                 │
+│  Thread Recv    │←─── Queue2 ────│  Thread Send    │
+└─────────────────┘                └─────────────────┘
+
+
+Giải thích chi tiết cơ chế hoạt động
+1. Hai Message Queues:
+
+QUEUE_A_TO_B (0x123): Chỉ A gửi, chỉ B nhận
+QUEUE_B_TO_A (0x456): Chỉ B gửi, chỉ A nhận
+
+2. Multi-threading:
+Mỗi process có 2 threads chạy song song:
+
+Thread Send: Đọc input từ keyboard → gửi vào queue
+Thread Recv: Liên tục polling queue → hiển thị message
+
+3. Đồng bộ:
+
+Biến running: Cả 2 threads chia sẻ, khi một thread quit → thread kia cũng dừng
+IPC_NOWAIT: Non-blocking receive, tránh deadlock
+usleep(100000): Giảm CPU usage khi polling
+
+
+Terminal 1:
+cd ~/LAB2/lab2_problem3
+./chat_a
+
+Terminal 2 (mở terminal mới):
+cd ~/LAB2/lab2_problem3
+./chat_b
+
+
+
+
+
+
+

@@ -1,0 +1,110 @@
+# Tạo thư mục làm việc
+mkdir lab2_problem1
+cd lab2_problem1
+
+# Copy 2 file dữ liệu vào đây (ví dụ: u1.base, u1.test)
+# Hoặc file1.txt, file2.txt của bạn
+
+# Tạo file problem1.c
+nano problem1.c
+# (Copy code từ artifact vào)
+
+# Tạo Makefile (optional)
+nano Makefile
+
+# Cách 1: Dùng Makefile
+make
+make all
+# Cách 2: Compile trực tiếp
+gcc -Wall -g -o problem1 problem1.c
+
+
+# Chạy
+./problem1 <tên_file_1> <tên_file_2>
+# Ví dụ:
+./problem1 movie-100k_1.txt movie-100k_2.txt
+```
+
+## **Bước 5: Xem kết quả**
+
+typedef struct {
+    double average_rating;  // Kết quả average
+    int total_ratings;      // Tổng số ratings
+    int is_ready;          // Flag đánh dấu hoàn thành
+} SharedData;
+```
+
+### **2. Flow chương trình:**
+```
+Parent Process
+    │
+    ├─→ Create Shared Memory (shmget, shmat)
+    │
+    ├─→ Fork Child 1
+    │       └─→ Read file1.txt
+    │       └─→ Calculate average
+    │       └─→ Write to shared_data[0]
+    │       └─→ Exit
+    │
+    ├─→ Fork Child 2
+    │       └─→ Read file2.txt
+    │       └─→ Calculate average
+    │       └─→ Write to shared_data[1]
+    │       └─→ Exit
+    │
+    ├─→ Wait for both children (waitpid)
+    │
+    ├─→ Read results from shared memory
+    │
+    ├─→ Calculate overall average
+    │
+    └─→ Cleanup (shmdt, shmctl)
+```
+
+### **3. Key APIs sử dụng:**
+- `shmget()` - Tạo shared memory
+- `shmat()` - Attach vào address space
+- `fork()` - Tạo child process
+- `waitpid()` - Đợi child hoàn thành
+- `shmdt()` - Detach shared memory
+- `shmctl()` - Xóa shared memory
+
+---
+
+## **📊 Output mong đợi:**
+```
+[Parent - PID 1234] Shared memory created with ID: 65536
+[Parent - PID 1234] Shared memory attached at: 0x7f...
+
+[Child 1 - PID 1235] Started processing file1.txt
+[Child 2 - PID 1236] Started processing file2.txt
+
+[Child 1 - PID 1235] Reading file: file1.txt
+[Child 2 - PID 1236] Reading file: file2.txt
+[Child 1 - PID 1235] Completed: Total ratings = 40000, Average = 3.5234
+[Child 2 - PID 1236] Completed: Total ratings = 60000, Average = 3.5456
+
+========== RESULTS ==========
+File 1 (file1.txt):
+  - Total ratings: 40000
+  - Average rating: 3.5234
+
+File 2 (file2.txt):
+  - Total ratings: 60000
+  - Average rating: 3.5456
+
+Overall Statistics:
+  - Total ratings: 100000
+  - Overall average rating: 3.5367
+=============================
+
+[Parent] Shared memory cleaned up successfully
+
+
+
+
+
+
+
+make clean 
+make all

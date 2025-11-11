@@ -1,0 +1,165 @@
+Problem 4: Shared Memory sử dụng mmap()
+Ý tưởng thực hiện
+Vấn đề:
+
+Sử dụng mmap() để map một file vào địa chỉ bộ nhớ
+Hai processes có thể chia sẻ dữ liệu thông qua file được map này
+Khác với shared memory (shmget), mmap() map file thực sự vào memory
+
+Giải pháp:
+
+Process Writer: Tạo file → mmap → ghi dữ liệu vào memory mapped region
+Process Reader: Mở file → mmap → đọc dữ liệu từ memory mapped region
+Cả 2 processes truy cập cùng một vùng nhớ vật lý thông qua file
+
+Sơ đồ hoạt động
+File "shared_data.txt"
+        ↓
+    mmap()
+        ↓
+┌─────────────────────┐
+│  Mapped Memory      │ ← Process Writer (ghi)
+│  (Shared Region)    │ ← Process Reader (đọc)
+└─────────────────────┘
+        ↓
+Tự động sync về file
+
+
+Khi bạn ghi vào shared_mem, kernel sẽ đánh dấu các trang nhớ là “dirty”
+
+Ví dụ trong chương trình Writer:
+
+shared_mem->counter = 100;
+strcpy(shared_mem->message, "Hello from Writer Process!");
+
+
+Khi bạn gán như vậy:
+
+Không có lệnh write(fd, ...) nào được gọi cả.
+
+Nhưng kernel biết rằng: “Trang bộ nhớ ảo tương ứng với file này đã bị thay đổi.”
+
+Kernel sẽ ghi lại (flush) các trang bị thay đổi xuống đĩa (file thực) theo cơ chế của mmap().
+
+🧩 5. Tóm lại
+File shared_data.txt có nội dung: Vì mmap() ánh xạ bộ nhớ vào file thật, và kernel ghi dữ liệu từ bộ nhớ ra file.
+Không cần write() hay fwrite(): Vì mmap() thay thế hoàn toàn thao tác ghi/đọc qua file descriptor.
+Nội dung file có thể đọc được (hoặc lộn xộn): Vì chứa dữ liệu nhị phân của struct SharedData, không phải văn bản thuần.
+
+
+
+
+cd LAB2
+CD lab2_problem4
+nano shared_data.h
+nano mmap_writer.c
+nano mmap_reader.c
+nano mmap_multi_reader.c
+nano Makefile 
+
+make clean
+make all
+
+
+Test cơ bản (1 Writer + 1 Reader):
+Terminal 1 - Writer:
+./mmap_writer
+Terminal 2 - Reader:
+./mmap_reader
+
+
+
+Test cơ bản (1 Writer + 1 Reader):
+Terminal 1 - Writer:
+./mmap_writer
+Terminal 2 - Reader:
+./mmap_reader
+
+
+
+
+## **Kết quả mong đợi**
+
+### **Writer Output:**
+```
+╔═══════════════════════════════════════╗
+║     MMAP Writer - Writing Data       ║
+╚═══════════════════════════════════════╝
+
+[✓] File 'shared_data.txt' created/opened successfully
+[✓] File size set to 4096 bytes
+[✓] Memory mapped at address: 0x7f8a3c000000
+
+Writing data to shared memory...
+─────────────────────────────────────
+Counter: 100
+Message: Hello from Writer Process!
+Data array: 0 10 20 30 40 50 60 70 80 90 
+Values array: 3.14 6.28 9.42 12.56 15.70 
+Status: READY
+─────────────────────────────────────
+
+[✓] Data written successfully!
+[INFO] Keeping memory mapped for 30 seconds...
+[INFO] Run './mmap_reader' in another terminal now!
+
+Time remaining: 30 seconds
+```
+
+### **Reader Output:**
+```
+╔═══════════════════════════════════════╗
+║     MMAP Reader - Reading Data       ║
+╚═══════════════════════════════════════╝
+
+[✓] File 'shared_data.txt' found!
+[✓] File opened successfully
+[✓] Memory mapped at address: 0x7f8a3c000000
+
+Reading data from shared memory...
+═════════════════════════════════════
+
+>>> Round 1 <
+─────────────────────────────────────
+Counter: 100
+Message: Hello from Writer Process!
+Data array: 0 10 20 30 40 50 60 70 80 90 
+Values array: 3.14 6.28 9.42 12.56 15.70 
+Status: READY
+─────────────────────────────────────
+Waiting 10 seconds before next read...
+
+>>> Round 2 <
+─────────────────────────────────────
+Counter: 200
+Message: Updated message!
+Data array: 0 10 20 30 40 50 60 70 80 90 
+Values array: 3.14 6.28 9.42 12.56 15.70 
+Status: UPDATED
+
+
+
+
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+```
+
+- **addr = NULL**: Để kernel tự chọn địa chỉ
+- **length = SHARED_SIZE**: Kích thước vùng map
+- **prot = PROT_READ | PROT_WRITE**: Quyền đọc và ghi
+- **flags = MAP_SHARED**: Chia sẻ với processes khác (quan trọng!)
+- **fd**: File descriptor của file đã mở
+- **offset = 0**: Bắt đầu từ đầu file
+
+### **2. So sánh MAP_SHARED vs MAP_PRIVATE:**
+
+| Đặc điểm | MAP_SHARED | MAP_PRIVATE |
+|----------|------------|-------------|
+| Chia sẻ với processes khác | ✅ Có | ❌ Không |
+| Thay đổi ghi vào file | ✅ Có | ❌ Không |
+| Use case | IPC, shared data | Copy-on-write |
+
+### **3. Luồng hoạt động:**
+```
+1. Writer: open() → ftruncate() → mmap() → write data → wait
+2. Reader: open() → mmap() → read data → munmap()
+3. Writer: munmap() → close()

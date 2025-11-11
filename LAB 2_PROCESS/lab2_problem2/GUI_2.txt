@@ -1,0 +1,75 @@
+📊 BÀI 2: TÍNH TỔNG SONG SONG VỚI MULTI-THREAD
+💡 Ý TƯỞNG GIẢI QUYẾT
+Phương pháp Serial (Tuần tự):
+sum(n) = 1 + 2 + 3 + ... + n
+Chỉ dùng 1 luồng để tính từ đầu đến cuối → Chậm với n lớn
+Phương pháp Multi-thread (Song song):
+Chia công việc thành nhiều phần nhỏ, mỗi thread tính 1 phần:
+
+Thread 1: tính tổng từ 1 → n/numThreads
+Thread 2: tính tổng từ (n/numThreads + 1) → 2n/numThreads
+Thread k: tính tổng từ ((k-1)n/numThreads + 1) → kn/numThreads
+
+Sau đó cộng tất cả kết quả lại → Nhanh hơn nhiều!
+
+
+
+cd LAB2
+cd lab2_problem2
+
+nano sum_serial.c
+
+nano sum_multi-thread.c
+
+nano Makefile
+
+chmod +x sum_serial
+chmod +x sum_multi-thread
+
+gcc -Wall -O2 -o sum_serial sum_serial.c
+gcc -Wall -O2 -pthread -o sum_multi-thread sum_multi-thread.c
+
+
+.3. Hoặc compile bằng Makefile (Khuyến nghị):
+make all
+
+**Kết quả:**
+```
+gcc -Wall -O2 -o sum_serial sum_serial.c
+✓ sum_serial compiled successfully
+gcc -Wall -O2 -pthread -o sum_multi-thread sum_multi-thread.c
+✓ sum_multi-thread compiled successfully
+
+
+vopham05@DESKTOP-2HD73M6:~/LAB2/lab2_problem2$ ls
+makefile  sum_multi-thread  sum_multi-thread.c  sum_serial  sum_serial.c
+
+
+
+5.2. Test Serial Version:
+./sum_serial 100
+
+5.3. Test Multi-thread Version:
+bash./sum_multi-thread 4 100
+
+5.4. Test với số lớn:
+./sum_serial 1000000
+./sum_multi-thread 10 1000000
+
+
+
+* So sánh hiệu năng
+make test
+
+# Test nhỏ
+./sum_serial 100
+./sum_multi-thread 4 100
+
+# Test vừa
+./sum_serial 1000000
+./sum_multi-thread 10 1000000
+
+# Test lớn
+./sum_serial 100000000
+./sum_multi-thread 16 100000000
+
