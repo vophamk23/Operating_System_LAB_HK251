@@ -1,3 +1,21 @@
+# ⚙️ Hướng Dẫn Cấu Hình & Quy Trình Làm Việc Git
+
+## ⚠️ Lưu Ý Cấu Hình Test
+
+Để chạy các bài test `sched`, `sched_0`, `sched_1`, bạn cần mở file:
+
+```
+include/os-cfg.h
+```
+
+và **bỏ dấu `//` (uncomment)** ở 3 dòng sau:
+
+```c
+#define MM_FIXED_MEMSZ
+#define VMDBG 1
+#define MMDBG 1
+```
+
 ---
 
 ## 🧩 Quy Trình Làm Việc (Workflow)
@@ -5,8 +23,8 @@
 ### 1. Lấy Code (Clone)
 
 ```bash
-git clone https://github.com/.....
-cd ......
+git clone https://github.com/DuongGiauTen/OS_Assignment.git
+cd OS_Assignment
 ```
 
 ---
